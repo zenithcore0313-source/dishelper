@@ -99,13 +99,18 @@ class GameRoleSelect(discord.ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
+        # 3초 타임아웃 방지 (역할 생성 및 지급에 시간이 걸릴 수 있음)
+        await interaction.response.defer(ephemeral=True)
+
         guild = interaction.guild
         if not guild:
             return
 
         selected_values = set(self.values)
-        added_roles = []
-        removed_roles = []
+        roles_to_add = []
+        roles_to_remove = []
+        added_labels = []
+        removed_labels = []
 
         for g in POPULAR_GAMES:
             role_name = g["label"]
@@ -118,23 +123,32 @@ class GameRoleSelect(discord.ui.Select):
 
             if g["value"] in selected_values:
                 if role not in interaction.user.roles:
-                    await interaction.user.add_roles(role)
-                    added_roles.append(g["label"])
+                    roles_to_add.append(role)
+                    added_labels.append(g["label"])
             else:
                 if role in interaction.user.roles:
-                    await interaction.user.remove_roles(role)
-                    removed_roles.append(g["label"])
+                    roles_to_remove.append(role)
+                    removed_labels.append(g["label"])
+
+        try:
+            if roles_to_add:
+                await interaction.user.add_roles(*roles_to_add)
+            if roles_to_remove:
+                await interaction.user.remove_roles(*roles_to_remove)
+        except discord.Forbidden:
+            await interaction.followup.send("[권한 오류] 봇에게 '역할 관리' 권한이 없거나, 봇의 역할이 지급할 역할보다 위에 위치해야 합니다.", ephemeral=True)
+            return
 
         msg_parts = []
-        if added_roles:
-            msg_parts.append(f"[추가] {', '.join(added_roles)}")
-        if removed_roles:
-            msg_parts.append(f"[제거] {', '.join(removed_roles)}")
+        if added_labels:
+            msg_parts.append(f"[추가] {', '.join(added_labels)}")
+        if removed_labels:
+            msg_parts.append(f"[제거] {', '.join(removed_labels)}")
 
         if not msg_parts:
             msg_parts.append("선택된 역할 변경사항이 없습니다.")
 
-        await interaction.response.send_message("\n".join(msg_parts), ephemeral=True)
+        await interaction.followup.send("\n".join(msg_parts), ephemeral=True)
 
 
 class GameRoleSelectView(discord.ui.View):
