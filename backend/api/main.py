@@ -160,7 +160,7 @@ async def post_notice(payload: NoticePayload):
 
 @app.get("/api/infractions")
 async def get_infractions():
-    async with await get_db() as db:
+    async with get_db() as db:
         async with db.execute("SELECT * FROM infractions ORDER BY id DESC LIMIT 20") as cur:
             rows = await cur.fetchall()
             return {"infractions": [dict(r) for r in rows]}

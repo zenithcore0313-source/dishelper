@@ -90,7 +90,7 @@ class ModerationCog(commands.Cog):
     @app_commands.command(name="warn", description="유저에게 이용 수칙 위반 경고를 부여합니다")
     @app_commands.default_permissions(manage_messages=True)
     async def warn(self, interaction: discord.Interaction, target: discord.Member, reason: str):
-        async with await get_db() as db:
+        async with get_db() as db:
             await db.execute("""
                 INSERT INTO infractions (guild_id, user_id, moderator_id, reason, action_type, created_at)
                 VALUES (?, ?, ?, ?, 'warn', ?)
